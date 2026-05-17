@@ -6,6 +6,10 @@ import com.parking.qa.tunnel.SshTunnelManager;
 import io.cucumber.java.AfterAll;
 import io.cucumber.java.Before;
 import io.cucumber.java.BeforeAll;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 public class TestHooks {
     private final ScenarioContext context;
@@ -17,6 +21,7 @@ public class TestHooks {
     @BeforeAll
     public static void beforeAll() {
         SshTunnelManager.startIfEnabled();
+        writeAllureEnvironment();
         logTestEnvironment();
     }
 
@@ -36,6 +41,22 @@ public class TestHooks {
         System.out.println("DB Password : ********");
         System.out.println("==================================================");
         System.out.println();
+    }
+
+    private static void writeAllureEnvironment() {
+        Path allureResults = Path.of("target", "allure-results");
+        try {
+            Files.createDirectories(allureResults);
+            Files.write(allureResults.resolve("environment.properties"), List.of(
+                    "Test Environment=" + TestConfig.environment(),
+                    "Auth Base URL=" + TestConfig.authBaseUrl(),
+                    "Database URL=" + TestConfig.dbUrl(),
+                    "Database Username=" + TestConfig.dbUsername(),
+                    "Database Tunnel Enabled=" + TestConfig.dbTunnelEnabled()
+            ));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Could not write Allure environment metadata", ex);
+        }
     }
 
     @Before

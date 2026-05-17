@@ -88,25 +88,25 @@ mvn test -Dauth.baseUrl=http://localhost:8082
 From this folder:
 
 ```powershell
-mvn test
+mvn clean test
 ```
 
 Run only smoke tests:
 
 ```powershell
-mvn test -D"cucumber.filter.tags=@auth and @smoke"
+mvn clean test -D"cucumber.filter.tags=@auth and @smoke"
 ```
 
 Run smoke tests against AWS:
 
 ```powershell
-mvn test -Dtest.env=aws -D"cucumber.filter.tags=@auth and @smoke"
+mvn clean test -Dtest.env=aws -D"cucumber.filter.tags=@auth and @smoke"
 ```
 
 Run AWS smoke tests without direct database checks:
 
 ```powershell
-mvn test -Dtest.env=aws -D"cucumber.filter.tags=@auth and @smoke and not @db"
+mvn clean test -Dtest.env=aws -D"cucumber.filter.tags=@auth and @smoke and not @db"
 ```
 
 Run AWS tests with database checks through an EC2 SSH tunnel:
@@ -127,7 +127,7 @@ The `aws-tunnel` environment starts and stops the SSH tunnel automatically as pa
 Run the tests with:
 
 ```powershell
-mvn test -Dtest.env=aws-tunnel -D"cucumber.filter.tags=@auth and @smoke"
+mvn clean test -Dtest.env=aws-tunnel -D"cucumber.filter.tags=@auth and @smoke"
 ```
 
 No separate SSH terminal is needed for normal execution. The framework starts the tunnel before scenarios run and stops it after the run completes.
@@ -175,13 +175,13 @@ You can confirm the local tunnel port is open with:
 Run only regression tests:
 
 ```powershell
-mvn test -D"cucumber.filter.tags=@auth and @regression"
+mvn clean test -D"cucumber.filter.tags=@auth and @regression"
 ```
 
 Run regression tests against AWS:
 
 ```powershell
-mvn test -Dtest.env=aws -D"cucumber.filter.tags=@auth and @regression"
+mvn clean test -Dtest.env=aws -D"cucumber.filter.tags=@auth and @regression"
 ```
 
 Database validation tests use the `@db` tag. If the AWS PostgreSQL port is not reachable from your machine, exclude DB tests with `and not @db` or override the DB settings with `-Ddb.url`, `-Ddb.username`, and `-Ddb.password`.

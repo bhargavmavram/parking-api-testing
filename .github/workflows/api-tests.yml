@@ -85,7 +85,24 @@ jobs:
         shell: bash
         continue-on-error: true
         run: |
-          mvn test -Dtest.env="$TEST_ENV" -D"cucumber.filter.tags=$CUCUMBER_TAGS"
+          mvn clean test -Dtest.env="$TEST_ENV" -D"cucumber.filter.tags=$CUCUMBER_TAGS"
+
+      - name: Add Allure executor metadata
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p target/allure-results
+          cat > target/allure-results/executor.json <<EOF
+          {
+            "name": "GitHub Actions",
+            "type": "github",
+            "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "buildOrder": ${{ github.run_number }},
+            "buildName": "${{ github.workflow }} #${{ github.run_number }}",
+            "buildUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "reportName": "Parking API Tests - ${TEST_ENV}"
+          }
+          EOF
 
       - name: Generate Allure report
         if: always()
