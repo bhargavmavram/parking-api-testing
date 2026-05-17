@@ -24,6 +24,15 @@ on:
   schedule:
     - cron: "0 6 * * *"
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   api-tests:
     name: API Tests
@@ -155,6 +164,24 @@ jobs:
           path: target/surefire-reports/
           if-no-files-found: ignore
 
+      - name: Prepare GitHub Pages report
+        if: always() && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          mkdir -p pages
+          cp -R target/allure-report/* pages/
+
+      - name: Upload GitHub Pages artifact
+        if: always() && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+      - name: Deploy Allure report to GitHub Pages
+        id: deploy-pages
+        if: always() && github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4
+
       - name: Publish run summary
         if: always()
         shell: bash
@@ -173,6 +200,10 @@ jobs:
             echo "- cucumber-report"
             echo "- allure-report"
             echo "- surefire-reports"
+            if [ -n "${{ steps.deploy-pages.outputs.page_url }}" ]; then
+              echo ""
+              echo "Published Allure report: ${{ steps.deploy-pages.outputs.page_url }}"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail job when tests fail

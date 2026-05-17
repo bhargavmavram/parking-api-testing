@@ -268,6 +268,7 @@ The workflow supports:
 - Self-hosted runner execution from EC2
 - Cucumber HTML artifact upload
 - Allure HTML artifact upload
+- Allure report publishing to GitHub Pages
 - Surefire/TestNG report artifact upload
 
 The workflow uses:
@@ -359,3 +360,21 @@ git --version
 ```
 
 If Java or Maven are missing on EC2, install them before running the workflow.
+
+### Hosted Allure Report
+
+The workflow publishes the latest Allure report to GitHub Pages for runs on `main`.
+
+One-time GitHub setting:
+
+```text
+GitHub -> parking-api-testing -> Settings -> Pages -> Build and deployment -> Source -> GitHub Actions
+```
+
+After the workflow completes, open:
+
+```text
+https://bhargavmavram.github.io/parking-api-testing/
+```
+
+The same URL is also added to the workflow run summary.
