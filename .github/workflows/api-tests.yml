@@ -1,0 +1,142 @@
+name: Parking API Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_env:
+        description: "Environment profile to run"
+        required: true
+        default: "aws"
+        type: choice
+        options:
+          - local
+          - aws
+          - aws-tunnel
+      cucumber_tags:
+        description: "Cucumber tag expression"
+        required: true
+        default: "@auth and @smoke and not @db"
+        type: string
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  api-tests:
+    name: API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      TEST_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.test_env || 'aws' }}
+      CUCUMBER_TAGS: ${{ github.event_name == 'workflow_dispatch' && inputs.cucumber_tags || '@auth and @smoke and not @db' }}
+      AUTH_BASE_URL: ${{ secrets.AUTH_BASE_URL }}
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_TUNNEL_ENABLED: ${{ secrets.DB_TUNNEL_ENABLED }}
+      DB_TUNNEL_EC2_HOST: ${{ secrets.DB_TUNNEL_EC2_HOST }}
+      DB_TUNNEL_EC2_USER: ${{ secrets.DB_TUNNEL_EC2_USER }}
+      DB_TUNNEL_RDS_HOST: ${{ secrets.DB_TUNNEL_RDS_HOST }}
+      DB_TUNNEL_RDS_PORT: ${{ secrets.DB_TUNNEL_RDS_PORT }}
+      DB_TUNNEL_LOCAL_HOST: "127.0.0.1"
+      DB_TUNNEL_LOCAL_PORT: "15432"
+      DB_TUNNEL_KEY_PATH: ${{ runner.temp }}/parking-ec2-key.pem
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Prepare SSH key for DB tunnel
+        if: env.TEST_ENV == 'aws-tunnel'
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "SSH_PRIVATE_KEY secret is required for aws-tunnel runs." >&2
+            exit 1
+          fi
+          printf '%s' "$SSH_PRIVATE_KEY" > "$DB_TUNNEL_KEY_PATH"
+          chmod 600 "$DB_TUNNEL_KEY_PATH"
+
+      - name: Show selected test configuration
+        shell: bash
+        run: |
+          echo "Environment: $TEST_ENV"
+          echo "Tags       : $CUCUMBER_TAGS"
+          echo "Auth URL   : ${AUTH_BASE_URL:-profile default}"
+          if [ "$TEST_ENV" = "aws-tunnel" ]; then
+            echo "Tunnel     : ${DB_TUNNEL_EC2_USER:-profile default}@${DB_TUNNEL_EC2_HOST:-profile default} -> ${DB_TUNNEL_RDS_HOST:-profile default}:${DB_TUNNEL_RDS_PORT:-5432}"
+          fi
+
+      - name: Run Maven tests
+        id: maven-tests
+        shell: bash
+        continue-on-error: true
+        run: |
+          mvn test -Dtest.env="$TEST_ENV" -D"cucumber.filter.tags=$CUCUMBER_TAGS"
+
+      - name: Generate Allure report
+        if: always()
+        shell: bash
+        run: |
+          mvn allure:report
+
+      - name: Upload Cucumber report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-report
+          path: target/cucumber-reports/
+          if-no-files-found: ignore
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: target/allure-report/
+          if-no-files-found: ignore
+
+      - name: Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+      - name: Publish run summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Parking API Test Run"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Environment | \`$TEST_ENV\` |"
+            echo "| Tags | \`$CUCUMBER_TAGS\` |"
+            echo "| Maven result | \`${{ steps.maven-tests.outcome }}\` |"
+            echo ""
+            echo "Reports are available from this workflow run's artifacts:"
+            echo ""
+            echo "- cucumber-report"
+            echo "- allure-report"
+            echo "- surefire-reports"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail job when tests fail
+        if: steps.maven-tests.outcome != 'success'
+        shell: bash
+        run: exit 1

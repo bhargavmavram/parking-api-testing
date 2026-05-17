@@ -250,3 +250,84 @@ Important CI files:
 target/surefire-reports/TEST-*.xml
 target/surefire-reports/testng-results.xml
 ```
+
+## GitHub Actions
+
+The API tests can run from GitHub Actions using:
+
+```text
+.github/workflows/api-tests.yml
+```
+
+The workflow supports:
+
+- Manual runs with `workflow_dispatch`
+- Pull request smoke runs
+- Scheduled daily smoke runs
+- Cucumber HTML artifact upload
+- Allure HTML artifact upload
+- Surefire/TestNG report artifact upload
+
+Manual run:
+
+```text
+GitHub -> Actions -> Parking API Tests -> Run workflow
+```
+
+Inputs:
+
+```text
+test_env: local | aws | aws-tunnel
+cucumber_tags: @auth and @smoke and not @db
+```
+
+Recommended first GitHub run:
+
+```text
+test_env: aws
+cucumber_tags: @auth and @smoke and not @db
+```
+
+Required GitHub Secrets for AWS/API runs:
+
+```text
+AUTH_BASE_URL
+```
+
+Required GitHub Secrets for DB validation:
+
+```text
+DB_URL
+DB_USERNAME
+DB_PASSWORD
+```
+
+Required GitHub Secrets for `aws-tunnel`:
+
+```text
+SSH_PRIVATE_KEY
+DB_TUNNEL_ENABLED
+DB_TUNNEL_EC2_HOST
+DB_TUNNEL_EC2_USER
+DB_TUNNEL_RDS_HOST
+DB_TUNNEL_RDS_PORT
+```
+
+Suggested values:
+
+```text
+AUTH_BASE_URL=http://34.240.100.223:8082
+DB_USERNAME=parking_user
+DB_PASSWORD=<RDS password>
+DB_TUNNEL_ENABLED=true
+DB_TUNNEL_EC2_HOST=34.240.100.223
+DB_TUNNEL_EC2_USER=ubuntu
+DB_TUNNEL_RDS_HOST=park-db.czcq4k0w4b57.eu-west-1.rds.amazonaws.com
+DB_TUNNEL_RDS_PORT=5432
+```
+
+`SSH_PRIVATE_KEY` should contain the private key content, not the file path.
+
+Important networking note:
+
+GitHub-hosted runners use changing public IP addresses. For `aws-tunnel` to work from GitHub-hosted runners, EC2 security group port `22` must allow SSH from the runner. A safer long-term setup is a self-hosted GitHub runner on EC2 or inside the VPC.
