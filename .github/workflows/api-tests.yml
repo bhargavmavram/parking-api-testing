@@ -110,6 +110,27 @@ jobs:
         run: |
           mvn allure:report
 
+      - name: Normalize Allure report metadata
+        if: always()
+        shell: bash
+        run: |
+          if [ -f target/allure-report/widgets/summary.json ]; then
+            sed -i 's/"reportName":"Allure Report"/"reportName":"Parking API Tests"/' target/allure-report/widgets/summary.json
+          fi
+          if [ -f target/allure-report/widgets/executors.json ]; then
+            cat > target/allure-report/widgets/executors.json <<EOF
+          [{
+            "name": "GitHub Actions",
+            "type": "github",
+            "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "buildOrder": ${{ github.run_number }},
+            "buildName": "${{ github.workflow }} #${{ github.run_number }}",
+            "buildUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "reportName": "Parking API Tests - ${TEST_ENV}"
+          }]
+          EOF
+          fi
+
       - name: Upload Cucumber report
         if: always()
         uses: actions/upload-artifact@v4

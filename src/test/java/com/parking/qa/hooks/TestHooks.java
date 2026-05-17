@@ -48,11 +48,11 @@ public class TestHooks {
         try {
             Files.createDirectories(allureResults);
             Files.write(allureResults.resolve("environment.properties"), List.of(
-                    "Test Environment=" + TestConfig.environment(),
-                    "Auth Base URL=" + TestConfig.authBaseUrl(),
-                    "Database URL=" + TestConfig.dbUrl(),
-                    "Database Username=" + TestConfig.dbUsername(),
-                    "Database Tunnel Enabled=" + TestConfig.dbTunnelEnabled()
+                    "Test_Environment=" + TestConfig.environment(),
+                    "Auth_Base_URL=" + TestConfig.authBaseUrl(),
+                    "Database_URL=" + TestConfig.dbUrl(),
+                    "Database_Username=" + TestConfig.dbUsername(),
+                    "Database_Tunnel_Enabled=" + TestConfig.dbTunnelEnabled()
             ));
         } catch (IOException ex) {
             throw new IllegalStateException("Could not write Allure environment metadata", ex);
