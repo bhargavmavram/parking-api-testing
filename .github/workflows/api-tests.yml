@@ -38,6 +38,9 @@ jobs:
     name: API Tests
     runs-on: self-hosted
     timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url }}
 
     env:
       TEST_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.test_env || 'aws-ec2' }}
@@ -170,6 +173,10 @@ jobs:
         run: |
           mkdir -p pages
           cp -R target/allure-report/* pages/
+
+      - name: Configure GitHub Pages
+        if: always() && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
 
       - name: Upload GitHub Pages artifact
         if: always() && github.ref == 'refs/heads/main'
