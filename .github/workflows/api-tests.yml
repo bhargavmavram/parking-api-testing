@@ -1,4 +1,4 @@
-name: Parking API Tests
+2name: Parking API Tests
 
 on:
   workflow_dispatch:
@@ -44,7 +44,7 @@ jobs:
       DB_TUNNEL_RDS_PORT: ${{ secrets.DB_TUNNEL_RDS_PORT }}
       DB_TUNNEL_LOCAL_HOST: "127.0.0.1"
       DB_TUNNEL_LOCAL_PORT: "15432"
-      DB_TUNNEL_KEY_PATH: ${{ runner.temp }}/parking-ec2-key.pem
+      DB_TUNNEL_KEY_PATH: /tmp/parking-ec2-key.pem
 
     steps:
       - name: Checkout
