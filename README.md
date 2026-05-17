@@ -38,6 +38,7 @@ Available environment profiles:
 ```text
 local.properties
 aws.properties
+aws-ec2.properties
 aws-tunnel.properties
 ```
 
@@ -264,9 +265,18 @@ The workflow supports:
 - Manual runs with `workflow_dispatch`
 - Pull request smoke runs
 - Scheduled daily smoke runs
+- Self-hosted runner execution from EC2
 - Cucumber HTML artifact upload
 - Allure HTML artifact upload
 - Surefire/TestNG report artifact upload
+
+The workflow uses:
+
+```yaml
+runs-on: self-hosted
+```
+
+This means tests run on your EC2 GitHub Actions runner instead of GitHub-hosted infrastructure. This is the recommended setup because EC2 can reach the private RDS database.
 
 Manual run:
 
@@ -277,32 +287,36 @@ GitHub -> Actions -> Parking API Tests -> Run workflow
 Inputs:
 
 ```text
-test_env: local | aws | aws-tunnel
-cucumber_tags: @auth and @smoke and not @db
+test_env: local | aws | aws-ec2 | aws-tunnel
+cucumber_tags: @auth and @smoke
 ```
 
 Recommended first GitHub run:
 
 ```text
-test_env: aws
-cucumber_tags: @auth and @smoke and not @db
+test_env: aws-ec2
+cucumber_tags: @auth and @smoke
 ```
 
-Required GitHub Secrets for AWS/API runs:
+Required GitHub Secrets for EC2/RDS test runs:
 
 ```text
 AUTH_BASE_URL
-```
-
-Required GitHub Secrets for DB validation:
-
-```text
 DB_URL
 DB_USERNAME
 DB_PASSWORD
 ```
 
-Required GitHub Secrets for `aws-tunnel`:
+Suggested self-hosted EC2 values:
+
+```text
+AUTH_BASE_URL=http://localhost:8082
+DB_URL=jdbc:postgresql://park-db.czcq4k0w4b57.eu-west-1.rds.amazonaws.com:5432/parking_db
+DB_USERNAME=parking_user
+DB_PASSWORD=<RDS password>
+```
+
+Optional GitHub Secrets for `aws-tunnel`:
 
 ```text
 SSH_PRIVATE_KEY
@@ -328,6 +342,20 @@ DB_TUNNEL_RDS_PORT=5432
 
 `SSH_PRIVATE_KEY` should contain the private key content, not the file path.
 
-Important networking note:
+Set up the self-hosted runner:
 
-GitHub-hosted runners use changing public IP addresses. For `aws-tunnel` to work from GitHub-hosted runners, EC2 security group port `22` must allow SSH from the runner. A safer long-term setup is a self-hosted GitHub runner on EC2 or inside the VPC.
+```text
+GitHub -> parking-api-testing -> Settings -> Actions -> Runners -> New self-hosted runner
+```
+
+Choose Linux and run the generated commands on EC2. Start the runner as a service so it stays online after logout.
+
+EC2 runner prerequisites:
+
+```bash
+java -version
+mvn -version
+git --version
+```
+
+If Java or Maven are missing on EC2, install them before running the workflow.

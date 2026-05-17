@@ -6,16 +6,17 @@ on:
       test_env:
         description: "Environment profile to run"
         required: true
-        default: "aws"
+        default: "aws-ec2"
         type: choice
         options:
           - local
           - aws
+          - aws-ec2
           - aws-tunnel
       cucumber_tags:
         description: "Cucumber tag expression"
         required: true
-        default: "@auth and @smoke and not @db"
+        default: "@auth and @smoke"
         type: string
   pull_request:
     branches:
@@ -26,12 +27,12 @@ on:
 jobs:
   api-tests:
     name: API Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 30
 
     env:
-      TEST_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.test_env || 'aws' }}
-      CUCUMBER_TAGS: ${{ github.event_name == 'workflow_dispatch' && inputs.cucumber_tags || '@auth and @smoke and not @db' }}
+      TEST_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.test_env || 'aws-ec2' }}
+      CUCUMBER_TAGS: ${{ github.event_name == 'workflow_dispatch' && inputs.cucumber_tags || '@auth and @smoke' }}
       AUTH_BASE_URL: ${{ secrets.AUTH_BASE_URL }}
       DB_URL: ${{ secrets.DB_URL }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
